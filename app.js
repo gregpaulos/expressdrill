@@ -1,7 +1,10 @@
 const express = require('express')
 const cors = require("cors");
+const morgan = require('morgan');
+
 const app = express()
 app.use(cors());
+app.use(morgan('tiny'));
 
 var port = process.env.PORT || 3000;
 
@@ -35,24 +38,31 @@ function findById(data, id){
 
 
 app.get('/', (req, res) => {
+    res.status(200);
     res.json({data: cohortsdata});
     })
 
 
 
-app.get("/:id", function (req, res) {
+app.get("/:id", function (req, res, next) {
     var record = findById(cohortsdata, req.params.id);
     if (!record){
-        res.status = 404;
-        res.json({
-            error: {
-                message: "No record found!"
-            }
-        });
+            res.status(404);
+            const error = new Error('Not Found.');
+            next(error);
+    } else {
+        res.status(200);
+        res.json({data: record});
     }
-
-    res.json({data: record});
 });
+
+app.use((error, req, res, next) => {
+    res.status(res.statusCode || 500);
+    res.json({
+      message: error.message,
+      errors: error.errors
+    });
+  });
 
 
 app.listen(port, () => console.log('Example app listening on port '+ port))
